@@ -4,6 +4,7 @@ import java.util.List;
 
 public class GenericObservationReportConfig extends GenericReportsConfig implements Config {
     private String applyDateRangeFor;
+    private String applyDateRangeOnConcept;
     private List<String> locationTagsToFilter;
     private Boolean showProvider = false;
     private boolean showVisitInfo = false;
@@ -40,6 +41,14 @@ public class GenericObservationReportConfig extends GenericReportsConfig impleme
 
     public void setApplyDateRangeFor(String applyDateRangeFor) {
         this.applyDateRangeFor = applyDateRangeFor;
+    }
+
+    public String getApplyDateRangeOnConcept() {
+        return applyDateRangeOnConcept;
+    }
+
+    public void setApplyDateRangeOnConcept(String applyDateRangeOnConcept) {
+        this.applyDateRangeOnConcept = applyDateRangeOnConcept;
     }
 
     public List<String> getLocationTagsToFilter() {

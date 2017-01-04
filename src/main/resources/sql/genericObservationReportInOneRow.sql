@@ -30,9 +30,10 @@ SET @programsJoinSql = ' JOIN episode_encounter ee ON e.encounter_id = ee.encoun
   JOIN program program ON pp.program_id = program.program_id';
 SET @filterByProgramsSql = '  AND program.name IN (#programsToFilter#)';
 SET @dateRangeSql = IF(@dateRangeFilter = 'visitStartDate', ' AND cast(v.date_started AS DATE) BETWEEN "#startDate#" AND "#endDate#"',
+                    IF(@dateRangeFilter = 'obsValueDateTime', ' AND cast(obs_vldtt.value_datetime AS DATE) BETWEEN "#startDate#" AND "#endDate#" ',
                     IF(@dateRangeFilter = 'programDate', ' AND cast(pp.date_enrolled AS DATE) <= "#endDate#"  AND (cast(pp.date_completed AS DATE) >= "#startDate#" or  pp.date_completed is NULL)',
                     IF(@dateRangeFilter = 'visitStopDate', ' AND cast(v.date_stopped AS DATE) BETWEEN "#startDate#" AND "#endDate#"',
-                    IF(@dateRangeFilter = 'obsCreatedDate', ' AND cast(o.date_created AS DATE) BETWEEN "#startDate#" AND "#endDate#"', ' AND cast(o.obs_datetime AS DATE) BETWEEN "#startDate#" AND "#endDate#"'))));
+                    IF(@dateRangeFilter = 'obsCreatedDate', ' AND cast(o.date_created AS DATE) BETWEEN "#startDate#" AND "#endDate#"', ' AND cast(o.obs_datetime AS DATE) BETWEEN "#startDate#" AND "#endDate#"')))));
 
 SET @providerJoinSql = '  JOIN provider pro ON pro.provider_id=ep.provider_id
   LEFT OUTER JOIN person_name provider_person ON provider_person.person_id = pro.person_id';
@@ -44,6 +45,14 @@ SET @ageGroupJoinSql = 'LEFT JOIN reporting_age_group rag ON DATE("#endDate#") B
                                                        AND rag.report_group_name = "#ageGroupName#"';
 SET @ageGroupSelectSql = 'rag.name AS "#ageGroupName#", rag.sort_order AS "Age Group Order"';
 
+SET @applyDateRangeForConcept = IF(@dateRangeFilter = 'obsValueDateTime', '
+  JOIN obs obs_vldtt ON obs_vldtt.person_id = o.person_id AND obs_vldtt.voided = false AND obs_vldtt.voided = false
+  JOIN concept_name obs_vldtt_fscn ON obs_vldtt_fscn.concept_id = obs_vldtt.concept_id AND obs_vldtt_fscn.concept_name_type="FULLY_SPECIFIED"
+   AND obs_vldtt_fscn.voided = false AND obs_vldtt_fscn.name = "#applyDateRangeOnConcept#"
+  JOIN encounter vldtt_e ON obs_vldtt.encounter_id = vldtt_e.encounter_id AND vldtt_e.voided = false
+  JOIN visit vldtt_v ON vldtt_v.visit_id = vldtt_e.visit_id AND vldtt_v.voided = false AND vldtt_v.visit_id = v.visit_id
+
+   ', '');
 
 SET @primaryIdentifierTypeUuid = NULL;
 SELECT property_value FROM global_property WHERE property = 'emr.primaryIdentifierType' into @primaryIdentifierTypeUuid;
@@ -88,6 +97,7 @@ FROM obs o
   JOIN encounter_provider ep ON ep.encounter_id=e.encounter_id
   ',IF(@showProvider = '', '', @providerJoinSql),'
   JOIN visit v ON v.visit_id=e.visit_id AND v.voided is false
+  ',IF(@applyDateRangeForConcept = '', '', @applyDateRangeForConcept),'
   JOIN visit_type vt ON vt.visit_type_id=v.visit_type_id AND vt.retired is false
   ',IF(@applyAgeGroup = '', '', @ageGroupJoinSql),'
   LEFT JOIN location l ON e.location_id = l.location_id AND l.retired is false

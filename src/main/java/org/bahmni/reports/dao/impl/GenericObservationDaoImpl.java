@@ -75,6 +75,8 @@ public class GenericObservationDaoImpl implements GenericDao {
         }
         sqlTemplate.add("concept_name_sql", getConceptNameFormatSql(report.getConfig()));
         sqlTemplate.add("applyDateRangeFor", getDateRangeFor(report.getConfig()));
+        String applyDateRangeOnConcept = report.getConfig().getApplyDateRangeOnConcept();
+        sqlTemplate.add("applyDateRangeOnConcept", applyDateRangeOnConcept);
 
         return SqlUtil.executeSqlWithStoredProc(connection, sqlTemplate.render());
     }
